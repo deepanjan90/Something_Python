@@ -24,8 +24,7 @@ HEIGHT = 35.6
 MARGIN = 5
 
 def start(): 
-   
-     
+        
     # Initialize pygame
     pygame.init()
      
