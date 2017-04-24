@@ -10,12 +10,21 @@ global prevStepCount
 global isDisplayOn
 
 isDisplayOn = False
+global gridSize
+global epsilonGreedy
+global discountFactor
+global maxIteration
+
+gridSize = 15
+epsilonGreedy = .1
+discountFactor = 0.8
+maxIteration = 250
 
 def showGridDisplay():
     return True  # Change if you want to display Grid
 
 def minStepsReachedBeforeDisplay():
-    return 30  # Change it to the count when reached it would  start displaying
+    return 40  # Change it to the count when reached it would  start displaying
 
 def turnOnDisplay():
     if(isDisplayOn == False):
@@ -24,21 +33,23 @@ def turnOnDisplay():
 # grid for display
 displayGrid = []
 def setUpDisplayGrid():
-    for row in range(15):
+    for row in range(gridSize):
         displayGrid.append([])
-        for column in range(15):
+        for column in range(gridSize):
             displayGrid[row].append(0) 
 
 # Reward for being in a state
 rewardGrid = []
 def setUpRewardGrid():
-    for row in range(225):
+    for row in range(gridSize*gridSize):
         rewardGrid.append(1)
+        if(row==((gridSize*gridSize)-2)):
+            rewardGrid.append(100)
 
 # Reward for choosing an action and getting to that state
 dataGrid = []
 def setUpDataGrid():
-    for row in range(225):
+    for row in range(gridSize*gridSize):
         dataGrid.append([])
         for column in range(4):
             dataGrid[row].append(1)
@@ -46,22 +57,22 @@ def setUpDataGrid():
 # List of states with corresponding action along with resulting state
 actionGrid = []
 def setUpActionGrid():
-    for row in range(225):
+    for row in range(gridSize*gridSize):
         actionGrid.append([])
-        cRow = int(row / 15)
-        cCol = row % 15
+        cRow = int(row / gridSize)
+        cCol = row % gridSize
         
         # State Up
         if(cRow - 1 < 0):
             actionGrid[row].append("Row:" + str(cRow) + "#Col:" + str(cCol) + "#State:" + str(row)) 
         else:
-            actionGrid[row].append("Row:" + str(cRow - 1) + "#Col:" + str(cCol) + "#State:" + str(row - 15))
+            actionGrid[row].append("Row:" + str(cRow - 1) + "#Col:" + str(cCol) + "#State:" + str(row - gridSize))
             
         # State Down
-        if(cRow + 1 > 14):
+        if(cRow + 1 > gridSize-1):
             actionGrid[row].append("Row:" + str(cRow) + "#Col:" + str(cCol) + "#State:" + str(row)) 
         else:
-            actionGrid[row].append("Row:" + str(cRow + 1) + "#Col:" + str(cCol) + "#State:" + str(row + 15)) 
+            actionGrid[row].append("Row:" + str(cRow + 1) + "#Col:" + str(cCol) + "#State:" + str(row + gridSize)) 
             
         # State Left
         if(cCol - 1 < 0):
@@ -70,7 +81,7 @@ def setUpActionGrid():
             actionGrid[row].append("Row:" + str(cRow) + "#Col:" + str(cCol - 1) + "#State:" + str(row - 1))
             
         # State Right
-        if(cCol + 1 > 14):
+        if(cCol + 1 > gridSize-1):
             actionGrid[row].append("Row:" + str(cRow) + "#Col:" + str(cCol) + "#State:" + str(row)) 
         else:
             actionGrid[row].append("Row:" + str(cRow) + "#Col:" + str(cCol + 1) + "#State:" + str(row + 1))
@@ -91,8 +102,8 @@ def getRowColState(rowColString):
 
 # resetting the display
 def resetDisplayGrid():
-    for row in range(15):
-        for column in range(15):
+    for row in range(gridSize):
+        for column in range(gridSize):
             displayGrid[row][column] = 0
 
 # Updating display grid with path        
@@ -124,7 +135,9 @@ def qLearn():
     iterationCountList = []
     prevStepCount = 0
     iterationNumber = 1
-    for runtime in range(250):
+    isChanged = True
+    while(isChanged):
+        isChanged = False
         resetDisplayGrid()
         done = False
         currentRow = 0
@@ -133,11 +146,9 @@ def qLearn():
         prevRow = 0
         prevCol = 0
         prevStateIndex = 0
-        finishStateIndex = 224
+        finishStateIndex = (gridSize*gridSize  - 1)
         randomActionIndex = 0
         possibleActionIndex = [0, 1, 2, 3]
-        epsilonGreedy = .1
-        discountFactor = 0.8
         stepCount = 0
         while (done != True):
             stepCount += 1
@@ -145,7 +156,6 @@ def qLearn():
                 turnOnDisplay()
                 updateGridDispay(prevRow, prevCol, currentRow, currentCol)
             if(currentStateIndex == finishStateIndex):
-                dataGrid[prevStateIndex][randomActionIndex] = 100
                 break    
             maxRewardStateIndexList = [i for i, x in enumerate(dataGrid[currentStateIndex]) if x == max(dataGrid[currentStateIndex])]
             otherRewardStateIndexList = list(set(possibleActionIndex) - set(maxRewardStateIndexList))
@@ -158,7 +168,10 @@ def qLearn():
             prevStateIndex = currentStateIndex
             rowColStateString = actionGrid[currentStateIndex][randomActionIndex]
             currentRow, currentCol, currentStateIndex = getRowColState(rowColStateString)
+            prevRewardValue = dataGrid[prevStateIndex][randomActionIndex]
             dataGrid[prevStateIndex][randomActionIndex] = rewardGrid[prevStateIndex] + discountFactor * (max(dataGrid[currentStateIndex]) + rewardGrid[currentStateIndex])
+            if(prevRewardValue!=dataGrid[prevStateIndex][randomActionIndex]):
+                isChanged = True
     
         print("Iteration : " + str(iterationNumber) + ", StepCount : " + str(stepCount))
         iterationCountList.append(iterationNumber)
