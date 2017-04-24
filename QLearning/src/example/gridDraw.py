@@ -9,7 +9,7 @@ import sys
 from pygame.locals import *
 
 
- # Define some colors
+# Define some colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 ASH = (178, 190, 181)
